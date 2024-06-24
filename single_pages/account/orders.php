@@ -1,32 +1,43 @@
 <?php
 defined('C5_EXECUTE') or die("Access Denied.");
-$dh = Core::make('helper/date');
 
-use Concrete\Package\CommunityStore\Src\CommunityStore\Order\OrderItem;
-use Concrete\Package\CommunityStore\Src\CommunityStore\Product\Product;
+use Concrete\Core\Form\Service\Form;
+use Concrete\Core\Localization\Service\Date;
 use \Concrete\Package\CommunityStore\Src\CommunityStore\Utilities\Price as Price;
 use Concrete\Core\Page\Page;
-use Concrete\Package\CommunityStoreOrderHistory\Src\OrderList;
+use Concrete\Core\Support\Facade\Application;
+use Concrete\Core\Utility\Service\Text;
+use Concrete\Core\Support\Facade\Url;
+use Concrete\Core\Support\Facade\Config;
+use Concrete\Package\CommunityStore\Attribute\OrderKey as StoreOrderKey;
+use Concrete\Package\CommunityStore\Src\CommunityStore\Order\Order;
 
-$th = Core::make('helper/text');
-/* @var $th \Concrete\Core\Utility\Service\Text */
+$app = Application::getFacadeApplication();
+
+/** @var Date $dh */
+$dh = $app->make(Date::class);
+
+/** @var \Concrete\Core\Utility\Service\Text $th*/
+$th = $app->make(Text::class);
+
+/** @var Order $order */
+
 ?>
 
-<?php if ($controller->getAction() === 'order'){
-	$form = Core::make('helper/form');
-
-	?>
+<?php if ($controller->getAction() === 'order') {
+	$form = $app->make(Form::class);
+?>
 
 	<div style="margin-bottom: 20px">
-		<form action="<?=URL::to('/account/orders/slip')?>" method="post" target="_blank">
-			<input type="hidden" name="oID" value="<?= $order->getOrderID()?>">
-			<button class="btn btn-primary"><?= t('Print Order Slip')?></button>
+		<form action="<?= URL::to('/account/orders/slip') ?>" method="post" target="_blank">
+			<input type="hidden" name="oID" value="<?= $order->getOrderID() ?>">
+			<button class="btn btn-primary"><?= t('Print Order Slip') ?></button>
 		</form>
 	</div>
 
 	<div class="row">
 		<div class="col-sm-8">
-			<p><strong><?= t('Order placed'); ?>:</strong> <?= $dh->formatDateTime($order->getOrderDate())?></p>
+			<p><strong><?= t('Order placed'); ?>:</strong> <?= $dh->formatDateTime($order->getOrderDate()) ?></p>
 		</div>
 		<div class="col-sm-4">
 			<?php
@@ -39,7 +50,7 @@ $th = Core::make('helper/text');
 			} else {
 				if ($refunded) {
 					$refundreason = $order->getRefundReason();
-					echo '<p class="alert alert-warning text-center"><strong>' . t('Refunded') . ($refundreason ? ' - ' .$refundreason : '') . '</strong></p>';
+					echo '<p class="alert alert-warning text-center"><strong>' . t('Refunded') . ($refundreason ? ' - ' . $refundreason : '') . '</strong></p>';
 				} elseif ($paid) {
 					echo '<p class="alert alert-success text-center"><strong>' . t('Paid') . '</strong></p>';
 				} elseif ($order->getTotal() > 0) {
@@ -53,39 +64,39 @@ $th = Core::make('helper/text');
 	</div>
 
 	<fieldset>
-		<legend><?= t('Customer Details')?></legend>
+		<legend><?= t('Customer Details') ?></legend>
 
 		<div class="row">
 			<div class="col-sm-4">
 				<?php $orderemail = $order->getAttribute('email'); ?>
 
-				<h4><?= t('Name')?></h4>
-				<p><?= $order->getAttribute('billing_first_name'). " " . $order->getAttribute("billing_last_name")?></p>
+				<h4><?= t('Name') ?></h4>
+				<p><?= $order->getAttribute('billing_first_name') . " " . $order->getAttribute("billing_last_name") ?></p>
 
 				<?php if ($orderemail) { ?>
-					<h4><?= t('Email')?></h4>
+					<h4><?= t('Email') ?></h4>
 					<p><a href="mailto:<?= $order->getAttribute('email'); ?>"><?= $order->getAttribute('email'); ?></a></p>
 				<?php } ?>
 
 				<?php
 				$phone = $order->getAttribute('billing_phone');
 				if ($phone) {
-					?>
+				?>
 					<h4><?= t('Phone'); ?></h4>
 					<p><?= $phone; ?></p>
 				<?php } ?>
 
 				<?php if (Config::get('community_store.vat_number')) { ?>
 					<?php $vat_number = $order->getAttribute('vat_number'); ?>
-					<h4><?= t('VAT Number')?></h4>
-					<p><?=$vat_number?></p>
+					<h4><?= t('VAT Number') ?></h4>
+					<p><?= $vat_number ?></p>
 				<?php } ?>
 			</div>
 
 			<div class="col-sm-4">
-				<h4><?= t('Billing Address')?></h4>
+				<h4><?= t('Billing Address') ?></h4>
 				<p>
-					<?= $order->getAttribute('billing_first_name'). " " . $order->getAttribute('billing_last_name')?><br>
+					<?= $order->getAttribute('billing_first_name') . " " . $order->getAttribute('billing_last_name') ?><br>
 					<?php
 					$billingaddress = $order->getAttributeValueObject('billing_address');
 
@@ -98,9 +109,9 @@ $th = Core::make('helper/text');
 			<?php if ($order->isShippable()) { ?>
 				<div class="col-sm-4">
 					<?php if ($order->getAttribute('shipping_address')->address1) { ?>
-						<h4><?= t('Shipping Address')?></h4>
+						<h4><?= t('Shipping Address') ?></h4>
 						<p>
-							<?= $order->getAttribute('shipping_first_name'). " " . $order->getAttribute('shipping_last_name')?><br>
+							<?= $order->getAttribute('shipping_first_name') . " " . $order->getAttribute('shipping_last_name') ?><br>
 							<?php
 							$shippingaddress = $order->getAttributeValueObject('shipping_address');
 
@@ -116,59 +127,59 @@ $th = Core::make('helper/text');
 	</fieldset>
 
 	<fieldset>
-		<legend><?= t('Order Items')?></legend>
+		<legend><?= t('Order Items') ?></legend>
 		<table class="table table-striped">
 			<thead>
-			<tr>
-				<th><strong><?= t('Product Name')?></strong></th>
-				<th><?= t('Product Options')?></th>
-				<th><?= t('Price')?></th>
-				<th><?= t('Quantity')?></th>
-				<th><?= t('Subtotal')?></th>
-			</tr>
+				<tr>
+					<th><strong><?= t('Product Name') ?></strong></th>
+					<th><?= t('Product Options') ?></th>
+					<th><?= t('Price') ?></th>
+					<th><?= t('Quantity') ?></th>
+					<th><?= t('Subtotal') ?></th>
+				</tr>
 			</thead>
 			<tbody>
-			<?php
-			$items = $order->getOrderItems();
-
-			if($items){
-				foreach($items as $item){
-					?>
-					<tr>
-						<td><?= $item->getProductName()?>
-							<?php if ($sku = $item->getSKU()) {
-								echo '(' .  $sku . ')';
-							} ?>
-						</td>
-						<td>
-							<?php
-							$options = $item->getProductOptions();
-							if($options){
-								echo "<ul class='list-unstyled'>";
-								foreach($options as $option){
-									echo "<li>";
-									echo '<strong>' .$option['oioKey']. ': </strong>';
-									echo ($option['oioValue'] ?: '<em>' .t('None') . '</em>');
-									echo "</li>";
-								}
-								echo "</ul>";
-							}
-							?>
-						</td>
-						<td><?=Price::format($item->getPricePaid())?></td>
-						<td><?= $item->getQty()?></td>
-						<td><?=Price::format($item->getSubTotal())?></td>
-					</tr>
 				<?php
+				$items = $order->getOrderItems();
+
+				if ($items) {
+					foreach ($items as $item) {
+				?>
+						<tr>
+							<td><?= $item->getProductName() ?>
+								<?php if ($sku = $item->getSKU()) {
+									echo '(' .  $sku . ')';
+								} ?>
+							</td>
+							<td>
+								<?php
+								$options = $item->getProductOptions();
+								if ($options) {
+									echo "<ul class='list-unstyled'>";
+									foreach ($options as $option) {
+										echo "<li>";
+										echo '<strong>' . $option['oioKey'] . ': </strong>';
+										echo ($option['oioValue'] ?: '<em>' . t('None') . '</em>');
+										echo "</li>";
+									}
+									echo "</ul>";
+								}
+								?>
+							</td>
+							<td><?= Price::format($item->getPricePaid()) ?></td>
+							<td><?= $item->getQty() ?></td>
+							<td><?= Price::format($item->getSubTotal()) ?></td>
+						</tr>
+				<?php
+					}
 				}
-			}
-			?>
+				?>
 			</tbody>
 			<tfoot>
-			<tr>
-				<td colspan="4" class="text-right"><strong><?= t('Items Subtotal')?>:</strong></td>
-				<td colspan="1" ><?=Price::format($order->getSubTotal())?></td>
-			</tr>
+				<tr>
+					<td colspan="4" class="text-right"><strong><?= t('Items Subtotal') ?>:</strong></td>
+					<td colspan="1"><?= Price::format($order->getSubTotal()) ?></td>
+				</tr>
 			</tfoot>
 		</table>
 
@@ -176,61 +187,61 @@ $th = Core::make('helper/text');
 		<?php $applieddiscounts = $order->getAppliedDiscounts();
 
 		if (!empty($applieddiscounts)) { ?>
-			<h4><?= t('Discounts Applied')?></h4>
+			<h4><?= t('Discounts Applied') ?></h4>
 			<hr />
 			<table class="table table-striped">
 				<thead>
-				<tr>
-					<th><strong><?= t('Name')?></strong></th>
-					<th><?= t('Displayed')?></th>
-					<th><?= t('Discount')?></th>
-					<th><?= t('Amount')?></th>
-					<th><?= t('Triggered')?></th>
-				</tr>
+					<tr>
+						<th><strong><?= t('Name') ?></strong></th>
+						<th><?= t('Displayed') ?></th>
+						<th><?= t('Discount') ?></th>
+						<th><?= t('Amount') ?></th>
+						<th><?= t('Triggered') ?></th>
+					</tr>
 
 				</thead>
 				<tbody>
-				<?php foreach($applieddiscounts as $discount) { ?>
-					<tr>
-						<td><?= h($discount['odName']); ?></td>
-						<td><?= h($discount['odDisplay']); ?></td>
-						<td>
-							<?php
-							$deducttype = $discount['odDeductType'];
-							$deductfrom = $discount['odDeductFrom'];
+					<?php foreach ($applieddiscounts as $discount) { ?>
+						<tr>
+							<td><?= h($discount['odName']); ?></td>
+							<td><?= h($discount['odDisplay']); ?></td>
+							<td>
+								<?php
+								$deducttype = $discount['odDeductType'];
+								$deductfrom = $discount['odDeductFrom'];
 
-							$discountRuleDeduct = $deductfrom;
+								$discountRuleDeduct = $deductfrom;
 
-							if ($deducttype === 'percentage') {
-								$discountRuleDeduct = t('from products');
-							}
+								if ($deducttype === 'percentage') {
+									$discountRuleDeduct = t('from products');
+								}
 
-							if ($deducttype === 'value_all') {
-								$discountRuleDeduct = t('from each product');
-							}
+								if ($deducttype === 'value_all') {
+									$discountRuleDeduct = t('from each product');
+								}
 
-							if ($deducttype === 'percentage' && $deductfrom === 'shipping' ) {
-								$discountRuleDeduct = t('from shipping');
-							}
+								if ($deducttype === 'percentage' && $deductfrom === 'shipping') {
+									$discountRuleDeduct = t('from shipping');
+								}
 
-							if (($deducttype === 'value_all' || $deducttype === 'value') && $deductfrom === 'shipping') {
-								$discountRuleDeduct = t('from shipping');
-							}
+								if (($deducttype === 'value_all' || $deducttype === 'value') && $deductfrom === 'shipping') {
+									$discountRuleDeduct = t('from shipping');
+								}
 
-							if ($deducttype === 'fixed' ) {
-								$discountRuleDeduct = t('set as price');
-							}
+								if ($deducttype === 'fixed') {
+									$discountRuleDeduct = t('set as price');
+								}
 
-							if ($deducttype === 'fixed' && $deductfrom === 'shipping') {
-								$discountRuleDeduct = t('set as price for shipping');
-							}
-							?>
-							<?= $discountRuleDeduct; ?>
-						</td>
-						<td><?= ($discount['odValue'] > 0 ? Price::format($discount['odValue']) : $discount['odPercentage'] . '%' ); ?></td>
-						<td><?= ($discount['odCode'] ? t('by code'). ' <em>' .$discount['odCode'] .'</em>': t('Automatically') ); ?></td>
-					</tr>
-				<?php } ?>
+								if ($deducttype === 'fixed' && $deductfrom === 'shipping') {
+									$discountRuleDeduct = t('set as price for shipping');
+								}
+								?>
+								<?= $discountRuleDeduct; ?>
+							</td>
+							<td><?= ($discount['odValue'] > 0 ? Price::format($discount['odValue']) : $discount['odPercentage'] . '%'); ?></td>
+							<td><?= ($discount['odCode'] ? t('by code') . ' <em>' . $discount['odCode'] . '</em>' : t('Automatically')); ?></td>
+						</tr>
+					<?php } ?>
 
 				</tbody>
 			</table>
@@ -239,7 +250,7 @@ $th = Core::make('helper/text');
 
 		<?php if ($order->isShippable()) { ?>
 			<p>
-				<strong><?= t("Shipping")?>: </strong><?=Price::format($order->getShippingTotal())?>
+				<strong><?= t("Shipping") ?>: </strong><?= Price::format($order->getShippingTotal()) ?>
 			</p>
 		<?php } ?>
 
@@ -266,7 +277,8 @@ $th = Core::make('helper/text');
 		</p>
 
 		<?php if ($order->isShippable()) { ?>
-			<br /><p>
+			<br />
+			<p>
 				<strong><?= t('Shipping Method') ?>: </strong><?= $order->getShippingMethodName() ?>
 			</p>
 
@@ -286,7 +298,7 @@ $th = Core::make('helper/text');
 			<?php }
 
 			if ($trackingURL) { ?>
-				<p><a target="_blank" href="<?= $trackingURL; ?>"><?= t('View shipment tracking');?></a></p>
+				<p><a target="_blank" href="<?= $trackingURL; ?>"><?= t('View shipment tracking'); ?></a></p>
 			<?php } ?>
 
 			<?php
@@ -300,11 +312,11 @@ $th = Core::make('helper/text');
 		<div class="row">
 			<?php if (!empty($orderChoicesAttList)) { ?>
 				<div class="col-sm-12">
-					<h4><?= t('Other Choices')?></h4>
+					<h4><?= t('Other Choices') ?></h4>
 					<?php foreach ($orderChoicesAttList as $ak) {
 						$attValue = $order->getAttributeValueObject(StoreOrderKey::getByHandle($ak->getAttributeKeyHandle()));
 						if ($attValue) {  ?>
-							<label><?= $ak->getAttributeKeyDisplayName()?></label>
+							<label><?= $ak->getAttributeKeyDisplayName() ?></label>
 							<p><?= str_replace("\r\n", "<br>", $attValue->getValue('displaySanitized', 'display')); ?></p>
 						<?php } ?>
 					<?php } ?>
@@ -317,7 +329,7 @@ $th = Core::make('helper/text');
 	<br />
 
 	<div class="form-actions">
-		<a href="<?php echo URL::to('/account/orders')?>" class="btn btn-default" /><?php echo t('Back to Orders')?></a>
+		<a href="<?php echo URL::to('/account/orders') ?>" class="btn btn-default" /><?php echo t('Back to Orders') ?></a>
 	</div>
 
 
@@ -326,12 +338,12 @@ $th = Core::make('helper/text');
 	<div>
 		<form role="form" class="form-inline ccm-search-fields">
 			<div class="ccm-search-fields-row">
-				<?php if($statuses){?>
+				<?php if ($statuses) { ?>
 					<ul id="group-filters" class="nav nav-pills">
-						<li <?= (!$status ? 'class="active"' : ''); ?>><a href="<?= URL::to('/account/orders/')?>"><?= t('All Statuses')?></a></li>
+						<li <?= (!$status ? 'class="active"' : ''); ?>><a href="<?= URL::to('/account/orders/') ?>"><?= t('All Statuses') ?></a></li>
 
-						<?php foreach($statuses as $statusoption){ ?>
-							<li <?= ($status == $statusoption->getHandle() ? 'class="active"' : ''); ?>><a href="<?= URL::to('/account/orders/', $statusoption->getHandle())?>"><?= t($statusoption->getName());?></a></li>
+						<?php foreach ($statuses as $statusoption) { ?>
+							<li <?= ($status == $statusoption->getHandle() ? 'class="active"' : ''); ?>><a href="<?= URL::to('/account/orders/', $statusoption->getHandle()) ?>"><?= t($statusoption->getName()); ?></a></li>
 						<?php } ?>
 					</ul>
 				<?php } ?>
@@ -340,115 +352,117 @@ $th = Core::make('helper/text');
 
 		<?php if (!empty($orderList)) {
 			/* @var $orderListObject OrderList */
-			?>
+		?>
 			<div class="table-responsive">
-			<table class="table ccm-search-results">
-				<thead>
-				<tr>
-					<th><a href="<?= $orderListObject->getSortURL('oID')?>"><?= t('Order %s', '#')?></a></th>
-					<th><?= t('Products')?></th>
-					<th><a href="<?= $orderListObject->getSortURL('oDate')?>"><?= t('Order Date')?></a></th>
-					<th><a href="<?= $orderListObject->getSortURL('oTotal')?>"><?= t('Total')?></a></th>
-					<th><?= t('Payment')?></th>
-					<th><?= t('Fulfilment')?></th>
-					<th><?= t('Print')?></th>
-				</tr>
-				</thead>
-				<tbody>
-				<?php
-				foreach($orderList as $order){
-					$cancelled = $order->getCancelled();
-					$canstart = '';
-					$canend = '';
-					if ($cancelled) {
-						$canstart = '<del>';
-						$canend = '</del>';
-					}
-					?>
-					<tr>
-						<td><?= $canstart; ?>
-							<a href="<?=URL::to('/account/orders/order/',$order->getOrderID())?>"><?= $order->getOrderID()?></a><?= $canend; ?>
-						</td>
-						<td>
-							<?= $canstart; ?>
-							<?php
-							$items = $order->getOrderItems();
-							$ix = 0;
-							$max = 3;
-							if ($items) {
-								?>
-								<ul style="list-style: none; padding:0"><?php
-								foreach ($items as $item) {
-									$url1 = $url2 = '';
-									/* @var $item OrderItem */
-									$product = $item->getProductObject();
-									if ($product) {
-										/* @var $product Product */
-										$id = $product->getPageID();
-										if ($id) {
-											$page = Page::getByID($id);
-											if ($page && !$page->isInTrash()) {
-												$url1 = '<a href="' . Url::to($page->getCollectionLink()) . '" target="_blank">';
-												$url2 = '</a>';
-											}
-										}
-									}
-
-									if (++$ix > $max) // Show first $max items
-										break;
+				<table class="table ccm-search-results">
+					<thead>
+						<tr>
+							<th><a href="<?= $orderListObject->getSortURL('oID') ?>"><?= t('Order %s', '#') ?></a></th>
+							<th><?= t('Products') ?></th>
+							<th><a href="<?= $orderListObject->getSortURL('oDate') ?>"><?= t('Order Date') ?></a></th>
+							<th><a href="<?= $orderListObject->getSortURL('oTotal') ?>"><?= t('Total') ?></a></th>
+							<th><?= t('Payment') ?></th>
+							<th><?= t('Fulfilment') ?></th>
+							<th><?= t('Print') ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php
+						foreach ($orderList as $order) {
+							$cancelled = $order->getCancelled();
+							$canstart = '';
+							$canend = '';
+							if ($cancelled) {
+								$canstart = '<del>';
+								$canend = '</del>';
+							}
+						?>
+							<tr>
+								<td><?= $canstart; ?>
+									<a href="<?= URL::to('/account/orders/order/', $order->getOrderID()) ?>"><?= $order->getOrderID() ?></a><?= $canend; ?>
+								</td>
+								<td>
+									<?= $canstart; ?>
+									<?php
+									$items = $order->getOrderItems();
+									$ix = 0;
+									$max = 3;
+									if ($items) {
 									?>
-									<li><?= $url1 . $th->wordSafeShortText($item->getProductName(),50) ?>
-										<?php if ($sku = $item->getSKU()) {
-											echo '(' . $sku . ')';
-										} ?>
-										<?= $url2 ?>
-									</li>
-								<?php
-								}
-								?></ul><?php
-								if (count($items) > $max) {
-									echo t('+%s more',count($items)-$max);
-								}
-							}
-							?><?= $canend; ?>
-						</td>
-						<td><?= $canstart; ?><?= $dh->formatDateTime($order->getOrderDate())?><?= $canend; ?></td>
-						<td><?= $canstart; ?><?=Price::format($order->getTotal())?><?= $canend; ?></td>
-						<td>
-							<?php
-							$refunded = $order->getRefunded();
-							$paid = $order->getPaid();
+										<ul style="list-style: none; padding:0"><?php
+																				foreach ($items as $item) {
+																					$url1 = $url2 = '';
+																					/* @var $item OrderItem */
+																					$product = $item->getProductObject();
+																					if ($product) {
+																						/* @var $product Product */
+																						$id = $product->getPageID();
+																						if ($id) {
+																							$page = Page::getByID($id);
+																							if ($page && !$page->isInTrash()) {
+																								$url1 = '<a href="' . Url::to($page->getCollectionLink()) . '" target="_blank">';
+																								$url2 = '</a>';
+																							}
+																						}
+																					}
 
-							if ($cancelled)  {
-								echo '<span class="label label-danger">' . t('Cancelled') . '</span>';
-							} elseif ($refunded) {
-								echo '<span class="label label-warning">' . t('Refunded') . '</span>';
-							} elseif ($paid) {
-								echo '<span class="label label-success">' . t('Paid') . '</span>';
-							} elseif ($order->getTotal() > 0) {
-								echo '<span class="label label-danger">' . t('Unpaid') . '</span>';
-							} else {
-								echo '<span class="label label-default">' . t('Free Order') . '</span>';
-							}
-							?>
-						</td>
-						<td><?= $canstart; ?><?=t(ucwords($order->getStatus()))?><?= $canend; ?></td>
-						<td>
-							<form action="<?=URL::to('/account/orders/slip')?>" method="post" target="_blank">
-								<input type="hidden" name="oID" value="<?= $order->getOrderID()?>">
-								<button class="btn btn-primary"><?= t('Print')?></button>
-							</form>
-						</td>
-					</tr>
-				<?php } ?>
-				</tbody>
-			</table>
+																					if (++$ix > $max) // Show first $max items
+																						break;
+																				?>
+												<li><?= $url1 . $th->wordSafeShortText($item->getProductName(), 50) ?>
+													<?php if ($sku = $item->getSKU()) {
+																						echo '(' . $sku . ')';
+																					} ?>
+													<?= $url2 ?>
+												</li>
+											<?php
+																				}
+											?>
+										</ul><?php
+												if (count($items) > $max) {
+													echo t('+%s more', count($items) - $max);
+												}
+											}
+												?><?= $canend; ?>
+								</td>
+								<td><?= $canstart; ?><?= $dh->formatDateTime($order->getOrderDate()) ?><?= $canend; ?></td>
+								<td><?= $canstart; ?><?= Price::format($order->getTotal()) ?><?= $canend; ?></td>
+								<td>
+									<?php
+									$refunded = $order->getRefunded();
+									$paid = $order->getPaid();
+
+									if ($cancelled) {
+										echo '<span class="label label-danger">' . t('Cancelled') . '</span>';
+									} elseif ($refunded) {
+										echo '<span class="label label-warning">' . t('Refunded') . '</span>';
+									} elseif ($paid) {
+										echo '<span class="label label-success">' . t('Paid') . '</span>';
+									} elseif ($order->getTotal() > 0) {
+										echo '<span class="label label-danger">' . t('Unpaid') . '</span>';
+									} else {
+										echo '<span class="label label-default">' . t('Free Order') . '</span>';
+									}
+									?>
+								</td>
+								<td><?= $canstart; ?><?= t(ucwords($order->getStatus())) ?><?= $canend; ?></td>
+								<td>
+									<form action="<?= URL::to('/account/orders/slip') ?>" method="post" target="_blank">
+										<input type="hidden" name="oID" value="<?= $order->getOrderID() ?>">
+										<button class="btn btn-primary"><?= t('Print') ?></button>
+									</form>
+								</td>
+							</tr>
+						<?php } ?>
+					</tbody>
+				</table>
 			</div>
 		<?php } ?>
 	</div>
 
 	<?php if (empty($orderList)) { ?>
-		<br /><p class="alert alert-info"><?= t('No Orders Found');?></p>
+		<br />
+		<p class="alert alert-info"><?= t('No Orders Found'); ?></p>
 	<?php } ?>
 
 	<?php if ($paginator->getTotalPages() > 1) { ?>

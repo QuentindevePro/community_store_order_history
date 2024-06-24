@@ -1,28 +1,32 @@
 <?php
 
 namespace Concrete\Package\CommunityStoreOrderHistory\Controller\SinglePage\Account;
+
 defined('C5_EXECUTE') or die("Access Denied.");
 
 use Concrete\Core\Http\Response;
 use Concrete\Core\Routing\RedirectResponse;
 use Concrete\Package\CommunityStore\Entity\Attribute\Key\StoreOrderKey;
-use Concrete\Package\CommunityStoreOrderHistory\Src\OrderList as StoreOrderList;;
+use Concrete\Package\CommunityStore\Src\CommunityStore\Order\OrderList;
+
 use Concrete\Core\Page\Controller\PageController;
 use Concrete\Package\CommunityStore\Src\CommunityStore\Order\OrderStatus\OrderStatus as StoreOrderStatus;
 use Concrete\Package\CommunityStore\Src\CommunityStore\Order\Order as StoreOrder;
-#use Config;
 use Concrete\Core\User\User;
 use Illuminate\Filesystem\Filesystem;
-use View;
-use Request;
-use Package;
+use Concrete\Core\View\View;
+use Concrete\Core\Http\Request;
 
-class Orders extends PageController {
-	public function view ($status = '') {
-		$orderList = new StoreOrderList();
+use Concrete\Core\Support\Facade\Application;
+
+class Orders extends PageController
+{
+	public function view($status = '')
+	{
+		$orderList = new OrderList();
 
 		$u = new User();
-		if (!$u || ! $u->isRegistered()) {
+		if (!$u || !$u->isRegistered()) {
 			return new RedirectResponse('/');
 		}
 
@@ -51,7 +55,8 @@ class Orders extends PageController {
 		$this->set('pageTitle', t('Orders'));
 	}
 
-	public function order ($oID = false) {
+	public function order($oID = false)
+	{
 		if (!$oID) {
 			return new RedirectResponse('/');
 		}
@@ -61,7 +66,7 @@ class Orders extends PageController {
 		}
 
 		$u = new User();
-		if (!$u || ! $u->isRegistered()) {
+		if (!$u || !$u->isRegistered()) {
 			return new RedirectResponse('/');
 		}
 
@@ -89,20 +94,21 @@ class Orders extends PageController {
 		$this->set('pageTitle', t('Order #') . $order->getOrderID());
 	}
 
-	public function slip() {
+	public function slip()
+	{
 		$u = new User();
-		if (!$u || ! $u->isRegistered()) {
+		if (!$u || !$u->isRegistered()) {
 			return new RedirectResponse('/');
 		}
 
-// If we're not a post request, get out otherwise we get an exception
-		if (! Request::isPost()) {
+		// If we're not a post request, get out otherwise we get an exception
+		if (!Request::isPost()) {
 			return new RedirectResponse('/');
 		}
 
 		/** @var StoreOrder $o */
 		$o = StoreOrder::getByID($this->post('oID'));
-		if (! $o) {
+		if (!$o) {
 			return new RedirectResponse('/');
 		}
 
@@ -112,16 +118,18 @@ class Orders extends PageController {
 		}
 
 		$orderChoicesAttList = StoreOrderKey::getAttributeListBySet('order_choices', $u);
-		$orderChoicesEnabled = count($orderChoicesAttList)? true : false;
+		$orderChoicesEnabled = count($orderChoicesAttList) ? true : false;
 
+		$app = Application::getFacadeApplication();
+
+		/** @var Filesystem $fs */
+		$fs = $app->make(Filesystem::class);
 		ob_start();
-		if (Filesystem::exists(DIR_BASE. '/application/elements/customer_order_slip.php')) {
+		if ($fs->exists(DIR_BASE . '/application/elements/customer_order_slip.php')) {
 			View::element('customer_order_slip', array('order' => $o, 'orderChoicesEnabled' => $orderChoicesEnabled, 'orderChoicesAttList' => $orderChoicesAttList));
 		} else {
 			View::element('customer_order_slip', array('order' => $o, 'orderChoicesEnabled' => $orderChoicesEnabled, 'orderChoicesAttList' => $orderChoicesAttList), 'community_store_order_history');
 		}
 		return new Response(ob_get_clean());
 	}
-
-
 }
